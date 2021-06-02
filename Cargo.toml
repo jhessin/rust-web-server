@@ -11,3 +11,4 @@ crate-type = ["lib"]
 path = "src/lib.rs"
 
 [dependencies]
+gotham = "0.6.0"
