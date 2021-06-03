@@ -8,4 +8,6 @@ edition = "2018"
 
 [dependencies]
 gotham = "0.6.0"
+gotham_derive = "0.6.0"
 mime = "0.3.16"
+rust-tags = "0.3.1"
