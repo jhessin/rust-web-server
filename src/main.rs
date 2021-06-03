@@ -4,19 +4,13 @@ extern crate gotham;
 #[macro_use]
 extern crate gotham_derive;
 
+use futures::prelude::*;
 use gotham::router::builder::*;
 use gotham::router::Router;
-use gotham::state::State;
+use tokio::signal;
 
 mod routes;
 pub mod state;
-
-const HELLO_ROUTER: &str = "Hello Router!";
-
-/// Create a `Handler` that is invoked for requests to the path "/"
-pub fn say_hello(state: State) -> (State, &'static str) {
-  (state, HELLO_ROUTER)
-}
 
 /// Create a `Router`
 ///
@@ -35,10 +29,19 @@ fn router() -> Router {
 }
 
 /// Start a server and use a `Router` to dispatch requests
-pub fn main() {
+#[tokio::main]
+pub async fn main() {
   let addr = "127.0.0.1:8080";
-  println!("Listening for requests at http://{}", addr);
+  let server = gotham::init_server(addr, || Ok(router()));
 
-  // All incoming requests are delegated to the router for further analysis and dispatch
-  gotham::start(addr, router())
+  // Future to wait for Ctrl+C.
+  let signal = async {
+    signal::ctrl_c().map_err(|_| ()).await?;
+    println!("Ctrl+C pressed");
+    Ok::<(), ()>(())
+  };
+
+  println!("Listening for requests at http://{}", addr);
+  future::select(server.boxed(), signal.boxed()).await;
+  println!("Shutting down gracefully");
 }

@@ -1,6 +1,10 @@
 //! Holds routes and the helper methods to put pages together.
 
-use gotham::state::*;
+use gotham::{
+  helpers::http::response::create_response,
+  hyper::{Body, Response, StatusCode},
+  state::*,
+};
 use rust_tags::{
   self, attributes, attributes::*, core::Fragment, tags, tags::*,
 };
@@ -36,30 +40,25 @@ fn end() -> Fragment {
 /// The actual routes
 /// --------------------------------------------
 /// A simple hello world route
-pub fn hello_world(state: State) -> (State, (mime::Mime, String)) {
-  (
-    state,
-    (
-      mime::TEXT_HTML,
-      html(&[
-        header("Hello World!"),
-        container(&[
-          "Jim Hessin".into(),
-          hr(&[]),
-          a(&[href("#"), "My Blog <hello world />".into()]),
-          br(),
-          br(),
-        ]),
-        end(),
-      ])
-      .data,
-    ),
-  )
+pub fn hello_world(state: State) -> (State, Response<Body>) {
+  let frag = html(&[
+    header("Hello World!"),
+    container(&[
+      "Jim Hessin".into(),
+      hr(&[]),
+      a(&[href("#"), "My Blog <hello world />".into()]),
+      br(),
+      br(),
+    ]),
+    end(),
+  ]);
+  let res = create_response(&state, StatusCode::OK, mime::TEXT_HTML, frag.data);
+  (state, res)
 }
 
 /// A basic form that greets the user if there is one and allows fields to be filled to set the
 /// user.
-pub fn greeting(state: State) -> (State, (mime::Mime, String)) {
+pub fn greeting(state: State) -> (State, Response<Body>) {
   let (message, submit_text) = if let Some(user) = state.try_borrow::<User>() {
     (String::from("Hello ") + &user.name + " welcome to my page.", "Update")
   } else {
@@ -145,5 +144,6 @@ pub fn greeting(state: State) -> (State, (mime::Mime, String)) {
     ]),
   ]);
 
-  (state, (mime::TEXT_HTML, frag.data))
+  let res = create_response(&state, StatusCode::OK, mime::TEXT_HTML, frag.data);
+  (state, res)
 }
