@@ -1,7 +1,9 @@
 //! Holds routes and the helper methods to put pages together.
 
 use gotham::state::*;
-use rust_tags::{attributes::*, core::Fragment, tags, tags::*};
+use rust_tags::{
+  self, attributes, attributes::*, core::Fragment, tags, tags::*,
+};
 
 use super::state::User;
 
@@ -21,7 +23,7 @@ fn container(content: &[Fragment]) -> Fragment {
   let mut c = vec![class("container")];
   c.extend_from_slice(content);
 
-  body(&[div(&c)])
+  body(&[class("text-center"), div(&c)])
 }
 
 /// The ending script tag for bootstrap
@@ -58,34 +60,90 @@ pub fn hello_world(state: State) -> (State, (mime::Mime, String)) {
 /// A basic form that greets the user if there is one and allows fields to be filled to set the
 /// user.
 pub fn greeting(state: State) -> (State, (mime::Mime, String)) {
-  if let Some(user) = state.try_borrow::<User>() {
-    let message = String::from("Hello ") + &user.name + " welcome to my page.";
-    (
-      state,
-      (
-        mime::TEXT_HTML,
-        html(&[
-          header("User Info"),
-          container(&[p(&[message.into()]), tags::form(&[])]),
-        ])
-        .data,
-      ),
-    )
+  let (message, submit_text) = if let Some(user) = state.try_borrow::<User>() {
+    (String::from("Hello ") + &user.name + " welcome to my page.", "Update")
   } else {
     (
-      state,
-      (
-        mime::TEXT_HTML,
-        html(&[
-          header("User Info"),
-          container(&[tags::form(&[
-            input(&[_type("text"), name("email"), placeholder("Email")]),
-            input(&[_type("text"), name("name"), placeholder("Name")]),
-            input(&[_type("submit"), value("Update")]),
-          ])]),
-        ])
-        .data,
-      ),
+      String::from("Welcome to my page, please enter your info below."),
+      "Submit",
     )
-  }
+  };
+
+  let frag = html(&[
+    header("User Info"),
+    container(&[
+      tags::style(&["
+              html, body { height: 100%; }
+              body {
+                display: flex;
+                align-items: center;
+                padding-top: 40px;
+                padding-bottom: 40px;
+                background-color: #F5F5F5;
+              }
+
+              .form-signin {
+                width: 100%;
+                max-width: 330px;
+                padding: 15px;
+                margin: auto;
+              }
+
+              .form-signin .form-floating:focus-within {
+                z-index: 2;
+              }
+
+              .form-signin input[type=\"email\"] {
+                margin-bottom: -1px;
+                border-bottom-right-radius: 0;
+                border-bottom-left-radius: 0;
+              }
+
+              .form-signin input[type=\"password\"] {
+                margin-bottom: 10px;
+                border-top-left-radius: 0;
+                border-top-right-radius: 0;
+              }
+              "
+      .into()]),
+      div(&[
+        class("form-signin"),
+        tags::form(&[
+          h1(&[class("h3 mb-3 fw-normal"), message.into()]),
+          div(&[
+            class("form-floating"),
+            input(&[
+              class("form-control"),
+              attributes::id("floatingEmail"),
+              _type("email"),
+              name("email"),
+              placeholder("name@example.com"),
+            ]),
+            tags::label(&[
+              attributes::for_("floatingEmail"),
+              "Email address".into(),
+            ]),
+          ]),
+          div(&[
+            class("form-floating"),
+            input(&[
+              class("form-control"),
+              attributes::id("floatingName"),
+              _type("text"),
+              name("name"),
+              placeholder("John Doe"),
+            ]),
+            tags::label(&[attributes::for_("floatingName"), "Name".into()]),
+          ]),
+          input(&[
+            class("w-100 btn btn-lg btn-primary"),
+            _type("submit"),
+            value(submit_text.into()),
+          ]),
+        ]),
+      ]),
+    ]),
+  ]);
+
+  (state, (mime::TEXT_HTML, frag.data))
 }
