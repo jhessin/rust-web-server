@@ -23,6 +23,7 @@ pub mod state;
 /// path are considered when determining if the request matches a defined route.
 fn router() -> Router {
   build_simple_router(|route| {
+    route.get("/*").to_dir("public/");
     route.get("/").to(routes::greeting);
     route.get("/hello").to(routes::hello_world);
   })
